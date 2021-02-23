@@ -11,5 +11,6 @@ type itemContext struct{}
 func InitRouter() *web.Router {
 	return web.New(itemContext{}).
 				Middleware(web.LoggerMiddleware).
-				Get("/item", getItems)
+				Get("/item", getItems).
+				Get("/item/:id", getItem)
 }
