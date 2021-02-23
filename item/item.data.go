@@ -2,6 +2,7 @@ package item
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/nick1989Gr/OnlineShopService/database"
@@ -63,4 +64,48 @@ func getAllItems() ([]Item, error) {
 	}
 	return items, nil
 
+}
+
+func insertItem(newItem Item) error{
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	_, err := database.DbConn.ExecContext(ctx, `INSERT INTO items 
+						(manufacturer, 
+						itemType, 
+						price, 
+						quantity) VALUES (?, ?, ?, ?)`,  
+						newItem.Manufacturer, 
+						newItem.ItemType, 
+						newItem.Price, 
+						newItem.Quantity)
+    return err
+}
+
+func removeItemByID(id int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	_, err := database.DbConn.ExecContext(ctx, `DELETE FROM items where id = ?`, id)
+	return err
+}
+
+func updateExistingItem(item Item) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	if item.ID == nil || *item.ID == 0 {
+		return errors.New("Non Valid ID")
+	}
+
+	_, err := database.DbConn.ExecContext(ctx, `UPDATE items SET
+	manufacturer=?,
+	itemType=?,
+	price=?,
+	quantity=?
+	WHERE id=?`,  
+	item.Manufacturer, 
+	item.ItemType, 
+	item.Price, 
+	item.Quantity,
+	item.ID)
+	return err
 }

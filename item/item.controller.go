@@ -12,5 +12,8 @@ func InitRouter() *web.Router {
 	return web.New(itemContext{}).
 				Middleware(web.LoggerMiddleware).
 				Get("/item", getItems).
-				Get("/item/:id", getItem)
+				Get("/item/:id", getItem).
+				Post("/item", addItem).
+				Delete("item/:id", removeItem).
+				Put("item", updateItem)
 }
