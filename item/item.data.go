@@ -2,18 +2,36 @@ package item
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
-	"github.com/nick1989Gr/OnlineShopService/database"
 	log "github.com/sirupsen/logrus"
 )
 
-func getItemByID(id int) (*Item, error){
+// IRepository encapsulates the logic to access items from the data source.
+type IRepository interface {
+	GetByID(id int) (*Item, error)
+	GetAll() ([]Item, error)
+	Insert(newItem Item) error
+	RemoveByID(id int) error
+	UpdateExisting(item Item) error
+}
+
+type repository struct {
+	db     *sql.DB
+}
+
+// NewRepository creates a new Item repository
+func NewRepository(db *sql.DB) IRepository {
+	return repository{db}
+}
+
+func (r repository) GetByID(id int) (*Item, error){
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	
-	row := database.DbConn.QueryRowContext(ctx, `SELECT 
+	row := r.db.QueryRowContext(ctx, `SELECT 
 	id, 
 	manufacturer, 
 	itemType, 
@@ -32,14 +50,13 @@ func getItemByID(id int) (*Item, error){
 		return nil, err 
 	}
 	return &item, nil
-
 }
 
-func getAllItems() ([]Item, error) {
+func (r repository) GetAll() ([]Item, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	
-	results, err := database.DbConn.QueryContext(ctx, `SELECT 
+	results, err := r.db.QueryContext(ctx, `SELECT 
 	id, 
 	manufacturer, 
 	itemType, 
@@ -63,14 +80,13 @@ func getAllItems() ([]Item, error) {
 		items = append(items, item)
 	}
 	return items, nil
-
 }
 
-func insertItem(newItem Item) error{
+func (r repository) Insert(newItem Item) error{
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	_, err := database.DbConn.ExecContext(ctx, `INSERT INTO items 
+	_, err := r.db.ExecContext(ctx, `INSERT INTO items 
 						(manufacturer, 
 						itemType, 
 						price, 
@@ -82,21 +98,21 @@ func insertItem(newItem Item) error{
     return err
 }
 
-func removeItemByID(id int) error {
+func (r repository) RemoveByID(id int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	_, err := database.DbConn.ExecContext(ctx, `DELETE FROM items where id = ?`, id)
+	_, err := r.db.ExecContext(ctx, `DELETE FROM items where id = ?`, id)
 	return err
 }
 
-func updateExistingItem(item Item) error {
+func (r repository) UpdateExisting(item Item) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	if item.ID == nil || *item.ID == 0 {
 		return errors.New("Non Valid ID")
 	}
 
-	_, err := database.DbConn.ExecContext(ctx, `UPDATE items SET
+	_, err := r.db.ExecContext(ctx, `UPDATE items SET
 	manufacturer=?,
 	itemType=?,
 	price=?,

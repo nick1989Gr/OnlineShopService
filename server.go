@@ -21,9 +21,8 @@ func init() {
 
 
 func main() {
-	
-	router := item.InitRouter()
 	database.SetupDatabase()
+	router := item.InitRouter()
 	log.Info("Server Started")
 	http.ListenAndServe("localhost:8080", router) 
 }

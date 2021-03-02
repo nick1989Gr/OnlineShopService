@@ -11,9 +11,26 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// IService encapsulates usecase logic for items.
+type IService interface  {
+	GetAll(rw web.ResponseWriter, req *web.Request)
+	GetByID(rw web.ResponseWriter, req *web.Request)
+	Add(rw web.ResponseWriter, req *web.Request)
+	Remove(rw web.ResponseWriter, req *web.Request)
+	Update(rw web.ResponseWriter, req *web.Request)
+}
 
-func getItems(rw web.ResponseWriter, req *web.Request) {
-	items, err := getAllItems()
+type service struct {
+	repository IRepository
+}
+
+// NewService creates a new Item service 
+func NewService(repository IRepository) IService {
+	return service{repository}
+}
+
+func (s service) GetAll(rw web.ResponseWriter, req *web.Request) {
+	items, err := s.repository.GetAll()
 	fmt.Println(items)
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -27,7 +44,7 @@ func getItems(rw web.ResponseWriter, req *web.Request) {
 	rw.Write(itemsJSON)
 }
 
-func getItem(rw web.ResponseWriter, req *web.Request) {
+func (s service) GetByID(rw web.ResponseWriter, req *web.Request) {
 	idStr := req.PathParams["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -35,7 +52,7 @@ func getItem(rw web.ResponseWriter, req *web.Request) {
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	item, err := getItemByID(id)
+	item, err := s.repository.GetByID(id)
 	if err == sql.ErrNoRows {
 		rw.WriteHeader(http.StatusNotFound)
 		return
@@ -52,14 +69,14 @@ func getItem(rw web.ResponseWriter, req *web.Request) {
 	rw.Write(dataJSON)
 }
 
-func addItem(rw web.ResponseWriter, req *web.Request) {
+func (s service) Add(rw web.ResponseWriter, req *web.Request) {
 	var item Item
 	err := json.NewDecoder(req.Body).Decode(&item)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err = insertItem(item)
+	err = s.repository.Insert(item)
 	if err != nil {
 		log.Error(err)
 		rw.WriteHeader(http.StatusInternalServerError)
@@ -68,7 +85,7 @@ func addItem(rw web.ResponseWriter, req *web.Request) {
 	rw.WriteHeader(http.StatusCreated)
 }
 
-func removeItem(rw web.ResponseWriter, req *web.Request) {
+func (s service) Remove(rw web.ResponseWriter, req *web.Request) {
 	idStr := req.PathParams["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
@@ -76,7 +93,7 @@ func removeItem(rw web.ResponseWriter, req *web.Request) {
 		rw.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	err = removeItemByID(id)
+	err = s.repository.RemoveByID(id)
 	if err !=nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
@@ -84,7 +101,7 @@ func removeItem(rw web.ResponseWriter, req *web.Request) {
 	rw.WriteHeader(http.StatusOK)
 }
 
-func updateItem(rw web.ResponseWriter, req *web.Request) {
+func (s service) Update(rw web.ResponseWriter, req *web.Request) {
 	var item Item
 	err := json.NewDecoder(req.Body).Decode(&item)
 	if err != nil {
@@ -92,7 +109,7 @@ func updateItem(rw web.ResponseWriter, req *web.Request) {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	err = updateExistingItem(item)
+	err = s.repository.UpdateExisting(item)
 	if err != nil {
 		log.Error(err)
 		rw.WriteHeader(http.StatusInternalServerError)

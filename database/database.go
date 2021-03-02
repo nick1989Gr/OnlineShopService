@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"time"
+
 	_ "github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 )
@@ -15,7 +16,7 @@ var DbConn *sql.DB
 // to the database
 func SetupDatabase() {
 	var err error
-	DbConn, err = sql.Open("mysql", "root:password123@tcp(127.0.0.1:49154)/OnlineShop")
+	DbConn, err = sql.Open("mysql", "root:password123@tcp(127.0.0.1:3306)/OnlineShop")
 	if err != nil {
 		log.Fatal(err)
 	}
