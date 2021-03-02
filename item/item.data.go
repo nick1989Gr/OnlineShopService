@@ -108,7 +108,7 @@ func (r repository) RemoveByID(id int) error {
 func (r repository) UpdateExisting(item Item) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
-	if item.ID == nil || *item.ID == 0 {
+	if item.ID == 0 {
 		return errors.New("Non Valid ID")
 	}
 
