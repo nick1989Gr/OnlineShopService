@@ -131,8 +131,57 @@ func (suite *ItemServiceTestSuite) TestAddSucceeds() {
 	actualBytes,err := json.Marshal(actual)
 	suite.Equal(err, nil)
 	suite.Equal(actualBytes, []byte(expected))
-
 }
+
+func (suite *ItemServiceTestSuite) TestAddFails() {
+	// Before 
+	suite.repo.status = MOCK_ERROR_STATUS
+	bodyRequest := `{"manufacturer":"Diesel","itemType":"Trousers","price":45,"quantity":6}`
+	request, _ := http.NewRequest("POST", "/item/", bytes.NewReader([]byte(bodyRequest)))
+	response := httptest.NewRecorder()
+	
+	// Action
+	suite.router.ServeHTTP(response, request)
+	
+	// Verify 
+	suite.Equal(response.Result().StatusCode, http.StatusInternalServerError)
+}
+
+func (suite *ItemServiceTestSuite) TestRemoveSucceeds() {
+	// Before 
+	response, request := newTestRequest("DELETE", "/item/1")
+	
+	// Action
+	suite.router.ServeHTTP(response, request)
+
+	// Verify 
+	suite.Equal(response.Result().StatusCode, http.StatusOK)
+	_,err:=suite.repo.GetByID(1)
+	suite.Equal(err, sql.ErrNoRows)
+}
+
+func (suite *ItemServiceTestSuite) TestRemoveFailsDueToBadRequest() {
+	// Before 
+	response, request := newTestRequest("DELETE", "/item/1as")
+	
+	// Action
+	suite.router.ServeHTTP(response, request)
+
+	// Verify 
+	suite.Equal(response.Result().StatusCode, http.StatusBadRequest)
+}
+
+func (suite *ItemServiceTestSuite) TestRemoveFailsDueToDbError() {
+	// Before 
+	response, request := newTestRequest("DELETE", "/item/156")
+	
+	// Action
+	suite.router.ServeHTTP(response, request)
+
+	// Verify 
+	suite.Equal(response.Result().StatusCode, http.StatusInternalServerError)
+}
+
 
 func newTestRequest(method, path string) (*httptest.ResponseRecorder, *http.Request) {
 	request, _ := http.NewRequest(method, path, nil)
@@ -173,13 +222,22 @@ func (m *mockRepo) GetAll() ([]model.Item, error){
 }
 
 func (m *mockRepo) Insert(newItem model.Item) error{
+	if m.status == MOCK_ERROR_STATUS {
+		return errors.New("an error occured")
+	}
 	newItem.ID = NEW_ITEM_ID
 	m.items = append(m.items, newItem)
 	return nil
 }
 
 func (m *mockRepo) RemoveByID(id int) error{
-	return nil	
+	for i,item := range m.items {
+		if item.ID == id {
+			m.items = append(m.items[:i], m.items[i+1:]...)
+			return nil
+		}
+	}
+	return errors.New("an error occured")	
 }
 func (m *mockRepo) UpdateExisting(item model.Item) error{
 	return nil
