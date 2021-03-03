@@ -22,7 +22,8 @@ func init() {
 
 func main() {
 	database.SetupDatabase()
-	router := item.InitRouter()
+	service := item.NewService(item.NewRepository(database.DbConn))
+	router := item.InitRouter(service)
 	log.Info("Server Started")
 	http.ListenAndServe("localhost:8080", router) 
 }

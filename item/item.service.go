@@ -38,7 +38,7 @@ func (s service) GetAll(rw web.ResponseWriter, req *web.Request) {
 	}
 	itemsJSON, err := json.Marshal(items)
 	if err != nil {
-		log.Error(err)
+		rw.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 	rw.Write(itemsJSON)
