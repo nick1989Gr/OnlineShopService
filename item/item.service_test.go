@@ -182,6 +182,38 @@ func (suite *ItemServiceTestSuite) TestRemoveFailsDueToDbError() {
 	suite.Equal(response.Result().StatusCode, http.StatusInternalServerError)
 }
 
+func (suite *ItemServiceTestSuite) TestUpdateSucceeds() {
+	// Before 
+	const UPDATED_INDEX = 1
+	expected := fmt.Sprintf(`{"id":%v,"manufacturer":"Levis","itemType":"Trousers","price":45,"quantity":6}`, UPDATED_INDEX)
+	request, _ := http.NewRequest("PUT", "/item/", bytes.NewReader([]byte(expected)))
+	response := httptest.NewRecorder()
+	
+	// Action
+	suite.router.ServeHTTP(response, request)
+	
+	// Verify 
+	suite.Equal(response.Result().StatusCode, http.StatusOK)
+	actual,err := suite.repo.GetByID(UPDATED_INDEX)
+	suite.Equal(err, nil)
+	actualBytes,err := json.Marshal(actual)
+	suite.Equal(err, nil)
+	suite.Equal(actualBytes, []byte(expected))
+}
+
+func (suite *ItemServiceTestSuite) TestUpdateFails() {
+	// Before 
+	const UPDATED_INDEX = 56
+	expected := fmt.Sprintf(`{"id":%v,"manufacturer":"Levis","itemType":"Trousers","price":45,"quantity":6}`, UPDATED_INDEX)
+	request, _ := http.NewRequest("PUT", "/item/", bytes.NewReader([]byte(expected)))
+	response := httptest.NewRecorder()
+	
+	// Action
+	suite.router.ServeHTTP(response, request)
+	
+	// Verify 
+	suite.Equal(response.Result().StatusCode, http.StatusInternalServerError)
+}
 
 func newTestRequest(method, path string) (*httptest.ResponseRecorder, *http.Request) {
 	request, _ := http.NewRequest(method, path, nil)
@@ -240,7 +272,13 @@ func (m *mockRepo) RemoveByID(id int) error{
 	return errors.New("an error occured")	
 }
 func (m *mockRepo) UpdateExisting(item model.Item) error{
-	return nil
+	for ind, i := range m.items {
+		if i.ID == item.ID {
+			m.items[ind] = item
+			return nil
+		}
+	}
+	return errors.New("an error occured")
 }
 
 func TestItemServiceTestSuite(t *testing.T) {
