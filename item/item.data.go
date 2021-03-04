@@ -2,10 +2,10 @@ package item
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"time"
 
+	database "github.com/nick1989Gr/OnlineShopService/database"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,11 +19,11 @@ type IRepository interface {
 }
 
 type repository struct {
-	db     *sql.DB
+	db     database.IEncapsulatedSQLDb 
 }
 
 // NewRepository creates a new Item repository
-func NewRepository(db *sql.DB) IRepository {
+func NewRepository(db database.IEncapsulatedSQLDb) IRepository {
 	return repository{db}
 }
 

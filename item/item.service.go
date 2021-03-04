@@ -3,7 +3,6 @@ package item
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -31,7 +30,6 @@ func NewService(repository IRepository) IService {
 
 func (s service) GetAll(rw web.ResponseWriter, req *web.Request) {
 	items, err := s.repository.GetAll()
-	fmt.Println(items)
 	if err != nil {
 		rw.WriteHeader(http.StatusInternalServerError)
 		return
